@@ -5,9 +5,9 @@
 # 5) System specific additional libraries, include paths, etc
 #    (Where to find X11 libraries, etc)
 #
-SYSTEM_INCLUDES = -Wall -I/usr/X11R6/include 
-SYSTEM_LDFLAGS = -L/usr/X11R6/lib 
-SYSTEM_LIBS = -ldl -lpthread
+SYSTEM_INCLUDES = -Wall -I/usr/X11R6/include -I../nanorq/include -I../nanorq/deps
+SYSTEM_LDFLAGS = -L/usr/X11R6/lib -L../nanorq
+SYSTEM_LIBS = -ldl -lpthread -lnanorq_core
 
 # 6) System specific capabilities
 # Must choose appropriate for the following:

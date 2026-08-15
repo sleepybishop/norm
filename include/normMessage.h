@@ -404,7 +404,8 @@ class NormPayloadId
             RS  = 2,   // fully-specified, general purpose Reed-Solomon
             RS8 = 5,   // fully-specified 8-bit Reed-Solmon per RFC 5510
             SB  = 129, // partially-specified "small block" codes
-            RL  = 131  // partially-specified "rateless" codes
+            RL  = 131, // partially-specified "rateless" codes
+            RQ  = 6    // RaptorQ rateless code
         };
         // Several NormPayloadId call sites (FTI/NACK parsing, block mask setup) have no
         // session or controller handy to supply the layout for a custom "fecId", so the
@@ -432,6 +433,7 @@ class NormPayloadId
                 case 2:
                 case 5:
                 case 129:
+                case RQ:
                 case RL:
                     return true;
                 default:
@@ -452,6 +454,7 @@ class NormPayloadId
             {
                 case 2:
                 case 5:
+                case RQ:
                 case RL:
                     return 4;
                 case 129:
@@ -477,6 +480,7 @@ class NormPayloadId
                     return 0x00ffffff;      // 24-bit blockId
                 case 129:
                     return 0xffffffff;      // 32-bit blockId
+                case RQ:
                 case RL:
                     return 0x0000ffff;      // 16-bit blockId
                 default:
@@ -519,6 +523,7 @@ class NormPayloadId
                     ptr[1] = htons(symbolId);  // 2 bytes
                     break;
             }   
+                case RQ:
                 case RL:
                 {
                     UINT16* payloadId = (UINT16*)buffer;
@@ -557,6 +562,7 @@ class NormPayloadId
                 }
                 case 129:
                     return ntohl(*cbuffer);
+                case RQ:
                 case RL:
                 {
                     UINT16* blockId = (UINT16*)cbuffer;
@@ -598,6 +604,7 @@ class NormPayloadId
                     UINT16* ptr = (UINT16*)(cbuffer + 1);
                     return ntohs(ptr[1]);
                 }
+                case RQ:
                 case RL:
                 {
                     UINT16* payloadId = (UINT16*)cbuffer;

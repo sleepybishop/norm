@@ -38,14 +38,15 @@ NORM_SRC = $(COMMON)/normMessage.cpp $(COMMON)/normSession.cpp \
            $(COMMON)/normSegment.cpp  $(COMMON)/normEncoder.cpp \
            $(COMMON)/normEncoderRS8.cpp $(COMMON)/normEncoderRS16.cpp \
            $(COMMON)/normEncoderMDP.cpp $(COMMON)/galois.cpp \
-           $(COMMON)/normFile.cpp $(COMMON)/normApi.cpp $(PROTOLIB)/src/common/protoThread.cpp $(SYSTEM_SRC)
+           $(COMMON)/normFile.cpp $(COMMON)/normApi.cpp $(PROTOLIB)/src/common/protoThread.cpp $(SYSTEM_SRC) \
+           $(COMMON)/normEncoderNanoRQ.cpp
           
 NORM_OBJ = $(NORM_SRC:.cpp=.o)
 
 LIB_SRC = $(NORM_SRC)
 LIB_OBJ = $(LIB_SRC:.cpp=.o)
 
-all: norm raft libnorm.a
+all: norm raft libnorm.a nanorqFecTest
 
 $(PROTOLIB)/lib/libprotokit.a: 
 	$(MAKE) -C $(PROTOLIB)/makefiles -f Makefile.$(SYSTEM) libprotokit.a
@@ -236,13 +237,26 @@ normClient:    $(CLIENT_OBJ) libnorm.a $(LIBPROTO)
 	cp $@ ../bin/$@
     
 # (normRatelessTest) rateless fec tester
-RATELESS_SRC = $(EXAMPLE)/normRatelessTest.cpp
-RATELESS_OBJ = $(RATELESS_SRC:.cpp=.o)
+../examples/normRatelessTest.o: ../examples/normRatelessTest.cpp
+	$(CXX) -c $(CFLAGS) -I../nanorq/include -I../nanorq/deps -o $@ $<
 
-normRatelessTest:    $(RATELESS_OBJ) libnorm.a $(LIBPROTO) 
-	$(CC) $(CFLAGS) -o $@ $(RATELESS_OBJ) $(LDFLAGS) libnorm.a $(LIBPROTO) $(LIBS)
+normRatelessTest: ../examples/normRatelessTest.o ../src/common/normEncoderNanoRQ.o libnorm.a $(LIBPROTO) 
+	$(CXX) $(CFLAGS) -o $@ ../examples/normRatelessTest.o ../src/common/normEncoderNanoRQ.o $(LDFLAGS) libnorm.a $(LIBPROTO) $(SYSTEM_LIBS) -L../nanorq -lnanorq_core
 	mkdir -p ../bin
 	cp $@ ../bin/$@
+
+# (nanorqFecTest) test for NanoRQ integration
+../src/common/nanorqFecTest.o: ../src/common/nanorqFecTest.cpp
+	$(CXX) -c $(CFLAGS) -I../nanorq/include -I../nanorq/deps -o $@ $<
+
+../src/common/normEncoderNanoRQ.o: ../src/common/normEncoderNanoRQ.cpp
+	$(CXX) -c $(CFLAGS) -I../nanorq/include -I../nanorq/deps -o $@ $<
+
+nanorqFecTest: ../src/common/nanorqFecTest.o ../src/common/normEncoderNanoRQ.o libnorm.a $(LIBPROTO)
+	$(CXX) $(CFLAGS) -o $@ ../src/common/nanorqFecTest.o ../src/common/normEncoderNanoRQ.o $(LDFLAGS) libnorm.a $(LIBPROTO) $(SYSTEM_LIBS) -L../nanorq -lnanorq_core
+	mkdir -p ../bin
+	cp $@ ../bin/$@
+
     
            
     

@@ -8,6 +8,8 @@
 
 #include "protokit.h"
 #include "normSession.h"
+
+#include "normEncoderNanoRQ.h"
 #include "normPostProcess.h"
 
 #include <stdio.h>   // for stdout/stderr printouts
@@ -2287,6 +2289,7 @@ bool NormApp::OnStartup(int argc, const char*const* argv)
     
     // Create a new session on multicast group/port
     session = session_mgr.NewSession(address, port, node_id);
+    session_mgr.RegisterFecCoder(NormPayloadId::RQ, NormCreateNanoRQEncoder, NormCreateNanoRQDecoder, true);
     if (session)
     {
         // Common session parameters
@@ -2331,7 +2334,7 @@ bool NormApp::OnStartup(int argc, const char*const* argv)
             if (silent_receiver) session->SndrSetEmcon(true);
             // We also use the baseId as our sender's "instance id" for illustrative purposes
             UINT16 instanceId = baseId;
-            if (!session->StartSender(instanceId, tx_buffer_size, segment_size, ndata, nparity))
+            if (!session->StartSender(instanceId, tx_buffer_size, segment_size, ndata, nparity, NormPayloadId::RQ))
             {
                 PLOG(PL_FATAL, "NormApp::OnStartup() start sender error!\n");
                 session_mgr.Destroy();

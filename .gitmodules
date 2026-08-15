@@ -1,3 +1,7 @@
 [submodule "protolib"]
 	path = protolib
 	url = https://github.com/USNavalResearchLaboratory/protolib.git
+
+[submodule "nanorq"]
+	path = nanorq
+	url = https://github.com/sleepybishop/nanorq.git

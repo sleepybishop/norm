@@ -124,8 +124,31 @@ list(APPEND COMMON_SOURCE_FILES
             ${COMMON}/normSegment.cpp
             ${COMMON}/normSession.cpp )
 
+
 # Setup platform independent include directory
 list(APPEND INCLUDE_DIRS ${CMAKE_CURRENT_LIST_DIR}/include )
+
+option(NORM_WITH_NANORQ "Build with NanoRQ FEC support" OFF)
+if (NORM_WITH_NANORQ)
+    list(APPEND COMMON_SOURCE_FILES 
+        ${COMMON}/normEncoderNanoRQ.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/nanorq/lib/chooser.c
+        ${CMAKE_CURRENT_SOURCE_DIR}/nanorq/lib/nanorq_core.c
+        ${CMAKE_CURRENT_SOURCE_DIR}/nanorq/lib/ops.c
+        ${CMAKE_CURRENT_SOURCE_DIR}/nanorq/lib/params.c
+        ${CMAKE_CURRENT_SOURCE_DIR}/nanorq/lib/partition.c
+        ${CMAKE_CURRENT_SOURCE_DIR}/nanorq/lib/sopi.c
+        ${CMAKE_CURRENT_SOURCE_DIR}/nanorq/lib/precode.c
+        ${CMAKE_CURRENT_SOURCE_DIR}/nanorq/lib/rand.c
+        ${CMAKE_CURRENT_SOURCE_DIR}/nanorq/lib/tuple.c
+        ${CMAKE_CURRENT_SOURCE_DIR}/nanorq/lib/uvec.c
+        ${CMAKE_CURRENT_SOURCE_DIR}/nanorq/deps/obl/oblas_common.c
+        ${CMAKE_CURRENT_SOURCE_DIR}/nanorq/deps/obl/oblas_lite.c
+    )
+    # nanorq requires some definitions, typically _DEFAULT_SOURCE
+    add_compile_definitions(_DEFAULT_SOURCE)
+endif()
+
 
 # Setup platform dependent libraries, defines, source file and compiler flags
 # (The "post processing" helper source is only needed for normApp build)
@@ -145,7 +168,12 @@ target_link_libraries(norm PRIVATE protokit::protokit)
 target_link_libraries(norm PUBLIC ${PLATFORM_LIBS})
 target_compile_definitions(norm PUBLIC ${PLATFORM_DEFINITIONS})
 target_compile_options(norm PUBLIC ${PLATFORM_FLAGS})
+
 target_include_directories(norm PRIVATE ${CMAKE_CURRENT_BINARY_DIR})
+if(NORM_WITH_NANORQ)
+    target_include_directories(norm PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/nanorq/include ${CMAKE_CURRENT_SOURCE_DIR}/nanorq/deps)
+endif()
+
 target_include_directories(norm PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include> $<INSTALL_INTERFACE:include>)
 
 if(BUILD_SHARED_LIBS)
@@ -166,7 +194,12 @@ if(BUILD_SHARED_LIBS AND BUILD_STATIC_LIBS)
 	target_link_libraries(norm-static PRIVATE protokit::protokit)
 	target_compile_definitions(norm-static PUBLIC ${PLATFORM_DEFINITIONS})
 	target_compile_options(norm-static PUBLIC ${PLATFORM_FLAGS})
+
 	target_include_directories(norm-static PRIVATE ${CMAKE_CURRENT_BINARY_DIR})
+	if(NORM_WITH_NANORQ)
+		target_include_directories(norm-static PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/nanorq/include ${CMAKE_CURRENT_SOURCE_DIR}/nanorq/deps)
+	endif()
+
 	target_include_directories(norm-static PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include> $<INSTALL_INTERFACE:include>)
 	set_target_properties(norm-static PROPERTIES OUTPUT_NAME "norm" PREFIX "lib")
 	set(NORM_STATIC "norm-static")
@@ -255,6 +288,19 @@ if(NORM_BUILD_EXAMPLES)
 endif()
 
 if(NORM_BUILD_TESTING)
+    if(NORM_WITH_NANORQ)
+        if(TARGET norm-static OR NOT BUILD_SHARED_LIBS)
+            add_executable(nanorqFecTest src/common/nanorqFecTest.cpp)
+            target_include_directories(nanorqFecTest PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/nanorq/include ${CMAKE_CURRENT_SOURCE_DIR}/nanorq/deps)
+            if(TARGET norm-static)
+                target_link_libraries(nanorqFecTest PRIVATE norm-static protokit::protokit)
+            else()
+                target_link_libraries(nanorqFecTest PRIVATE norm protokit::protokit)
+            endif()
+            add_test(NAME nanorqFecTest COMMAND nanorqFecTest)
+        endif()
+    endif()
+
     add_executable(normRatelessTest examples/normRatelessTest.cpp)
     target_link_libraries(normRatelessTest PRIVATE norm protokit::protokit)
     add_test(NAME normRatelessTest COMMAND normRatelessTest)
